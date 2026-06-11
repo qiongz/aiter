@@ -104,6 +104,7 @@ class _FAv3SageWrapperFunc(torch.autograd.Function):
         config: Optional[dict] = None,
         block_lut: Optional[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = None,
         freeze_softmax_max_count: int = -1,
+        sparge_load_balancing: bool = False,
     ):
         # 1. Dimension Mapping & Config Setup
         bshd_map = [0, 1, 2, 3] if layout == "bshd" else [0, 2, 1, 3]
@@ -197,6 +198,7 @@ class _FAv3SageWrapperFunc(torch.autograd.Function):
             lut_count=lut_count,
             use_block_sparse=use_block_sparse,
             freeze_softmax_max_count=freeze_softmax_max_count,
+            sparge_load_balancing=sparge_load_balancing,
         )
 
         if return_lse:
@@ -222,6 +224,7 @@ class _FAv3SageWrapperFunc(torch.autograd.Function):
             None,  # config
             None,  # block_lut
             None,  # freeze_softmax_max_count
+            None,  # sparge_load_balancing
         )
 
 
@@ -241,6 +244,7 @@ def fav3_sage_wrapper_func(
     config: Optional[dict] = None,
     block_lut: Optional[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = None,
     freeze_softmax_max_count: int = -1,
+    sparge_load_balancing: bool = False,
 ):
     """
     SageAttention v1 high-precision entry point.
@@ -278,6 +282,9 @@ def fav3_sage_wrapper_func(
         freeze_softmax_max_count: number of inner-loop K-block iterations after
                 which the online-softmax running max is frozen (block-sparse only;
                 -1 disables). See fav3_sage_func / build_attention_lut.
+        sparge_load_balancing: when True (block-sparse only), enable the
+                persistent + atomic longest-processing-time tile schedule to
+                balance work across CUs. See fav3_sage_func for details.
 
     Returns:
         out: Output tensor [batch, seqlen, num_q_heads, head_dim] or [batch, num_q_heads, seqlen, head_dim] (FP32)
@@ -325,6 +332,7 @@ def fav3_sage_wrapper_func(
         config,
         block_lut,
         freeze_softmax_max_count,
+        sparge_load_balancing,
     )
 
 
